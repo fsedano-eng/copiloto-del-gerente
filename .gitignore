@@ -1,0 +1,28 @@
+# dependencias
+node_modules/
+.pnp
+.pnp.js
+
+# next
+.next/
+out/
+build/
+next-env.d.ts
+
+# entorno — NUNCA commitear claves
+.env
+.env.local
+.env*.local
+!.env.local.example
+
+# vercel
+.vercel
+
+# sistema
+.DS_Store
+*.pem
+*.log
+npm-debug.log*
+
+# typescript
+*.tsbuildinfo

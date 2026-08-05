@@ -1,0 +1,74 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    @apply bg-cream text-ink font-sans;
+  }
+  /* El tema no debe pisar el naranja de marca en enlaces dentro de contenido */
+  a {
+    @apply text-orange;
+  }
+}
+
+@layer components {
+  /* Render del markdown ligero que devuelve el modelo (ver components/Markdown.tsx) */
+  .respuesta h2 {
+    @apply mt-6 mb-2 text-[17px] font-bold text-dark first:mt-0;
+  }
+  .respuesta h3 {
+    @apply mt-5 mb-2 text-[15px] font-bold text-dark first:mt-0;
+  }
+  .respuesta p {
+    @apply mb-3 leading-relaxed;
+  }
+  .respuesta ul {
+    @apply mb-3 list-disc space-y-1 pl-5;
+  }
+  .respuesta ol {
+    @apply mb-3 list-decimal space-y-1 pl-5;
+  }
+  .respuesta strong {
+    @apply font-semibold text-dark;
+  }
+  .respuesta blockquote {
+    @apply my-3 border-l-[3px] border-orange bg-orange-soft px-4 py-2 italic;
+  }
+  .respuesta > *:last-child {
+    @apply mb-0;
+  }
+}
+
+/* ── Vista de impresión / PDF ──────────────────────────────────────────
+   El botón "Descargar en PDF" abre el diálogo de impresión del navegador
+   sobre esta hoja. Ventaja: fidelidad exacta con la marca y cero coste.  */
+@media print {
+  .no-imprimir {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  .hoja-impresion {
+    max-width: none;
+    padding: 0;
+  }
+  .burbuja-gerente {
+    border: 1px solid #e8e4df !important;
+    background: #faf8f6 !important;
+  }
+  .respuesta h2,
+  .respuesta h3 {
+    break-after: avoid;
+  }
+  .respuesta blockquote,
+  .bloque-mensaje {
+    break-inside: avoid;
+  }
+}
