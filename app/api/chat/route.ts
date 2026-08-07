@@ -125,9 +125,6 @@ export async function POST(request: Request) {
             {
               type: "text",
               text: SYSTEM_PROMPT,
-              // El prompt + conocimiento son ~10K tokens: cachearlos hace que
-              // a partir del primer mensaje el coste sea casi cero.
-              cache_control: { type: "ephemeral" },
             },
             ...(contexto ? [{ type: "text" as const, text: contexto }] : []),
             ...(esSeguimiento
