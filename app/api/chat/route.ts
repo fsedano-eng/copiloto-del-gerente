@@ -125,6 +125,9 @@ export async function POST(request: Request) {
             {
               type: "text",
               text: SYSTEM_PROMPT,
+              // El prompt + conocimiento son ~10K tokens: cachearlos hace que
+              // a partir del primer mensaje el coste sea casi cero.
+              cache_control: { type: "ephemeral" },
             },
             ...(contexto ? [{ type: "text" as const, text: contexto }] : []),
             ...(esSeguimiento
@@ -154,19 +157,7 @@ export async function POST(request: Request) {
         }
       } catch (error) {
         // Nunca registramos el contenido de la conversación: solo el fallo.
-        // TEMPORAL: traza completa + metadatos (nunca el texto en sí) para
-        // localizar el origen exacto de un error intermitente en producción
-        // (ByteString/header). Quitar cuando esté identificado.
-        const indice = [...respuestaCompleta].findIndex((c) => c.codePointAt(0)! > 255);
-        console.error(
-          "[chat] fallo generando la respuesta:",
-          (error as Error).stack ?? error,
-          "| longitud acumulada:",
-          respuestaCompleta.length,
-          "| primer caracter no-latin1 en índice:",
-          indice,
-          indice >= 0 ? `código ${respuestaCompleta.codePointAt(indice)}` : "(ninguno)",
-        );
+        console.error("[chat] fallo generando la respuesta:", (error as Error).message);
         controller.enqueue(
           codificador.encode(
             "\n\n_Se ha cortado la respuesta por un problema técnico. Vuelve a intentarlo._",
