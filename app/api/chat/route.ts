@@ -157,7 +157,10 @@ export async function POST(request: Request) {
         }
       } catch (error) {
         // Nunca registramos el contenido de la conversación: solo el fallo.
-        console.error("[chat] fallo generando la respuesta:", (error as Error).message);
+        // TEMPORAL: traza completa para localizar el origen exacto de un
+        // error intermitente en producción (ByteString/header). Quitar
+        // cuando esté identificado.
+        console.error("[chat] fallo generando la respuesta:", (error as Error).stack ?? error);
         controller.enqueue(
           codificador.encode(
             "\n\n_Se ha cortado la respuesta por un problema técnico. Vuelve a intentarlo._",
