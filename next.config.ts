@@ -28,6 +28,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Sin esto, la compresión automática de Next puede bufferear las
+  // respuestas en streaming (el chat) y entregarlas de golpe al final
+  // en vez de ir soltando el texto en tiempo real.
+  compress: false,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

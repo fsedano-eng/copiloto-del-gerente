@@ -43,17 +43,68 @@
   .respuesta > *:last-child {
     @apply mb-0;
   }
+
+  /* Membrete de marca del PDF — oculto en pantalla, ver .solo-imprimir.
+     Sale una vez arriba del documento, en flujo normal (no se repite en
+     cada página física: ver la nota en @media print sobre por qué). */
+  .cabecera-impresion {
+    @apply mb-8 flex items-center gap-3 border-b-[3px] border-orange bg-cream pb-4;
+  }
+  .cabecera-impresion-marca {
+    @apply text-[15px] font-bold text-dark;
+  }
+  .cabecera-impresion-producto {
+    @apply text-[13px] text-gray;
+  }
+
+  /* Pie de página del PDF, una vez al final del documento. */
+  .pie-impresion {
+    @apply mt-8 border-t-[3px] border-orange bg-cream pt-3 text-center text-[11px] text-gray;
+  }
+
+  /* Por defecto oculto: solo se muestra al imprimir (ver @media print). */
+  .solo-imprimir {
+    display: none;
+  }
 }
 
 /* ── Vista de impresión / PDF ──────────────────────────────────────────
    El botón "Descargar en PDF" abre el diálogo de impresión del navegador
    sobre esta hoja. Ventaja: fidelidad exacta con la marca y cero coste.  */
 @media print {
+  /* Margen uniforme en todas las páginas — sin esto, la segunda página en
+     adelante empieza pegada arriba del todo, sin el aire que sí tiene la
+     primera por culpa del padding del contenedor en pantalla. */
+  @page {
+    margin: 2cm 1.6cm;
+  }
+
+  /* Sin esto, muchos navegadores imprimen sin colores de fondo/borde por
+     defecto (el interruptor "Gráficos de fondo" del diálogo de impresión) —
+     esto lo fuerza para que el naranja de marca salga siempre. */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   .no-imprimir {
     display: none !important;
   }
+  .solo-imprimir {
+    display: block !important;
+  }
   body {
     background: #fff;
+  }
+  /* Sin esto, los contenedores con scroll (pensados para la pantalla) solo
+     imprimen el trozo que estaba visible al pulsar el botón, no toda la
+     conversación: el navegador recorta el overflow al imprimir. */
+  .raiz-app,
+  .main-chat,
+  .contenedor-scroll {
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
   }
   .hoja-impresion {
     max-width: none;
@@ -69,6 +120,38 @@
   }
   .respuesta blockquote,
   .bloque-mensaje {
+    break-inside: avoid;
+  }
+
+  /* Naranja de marca más presente en los títulos del PDF (no en pantalla:
+     ahí siguen oscuros, esto solo afecta al bloque .solo-imprimir). */
+  .solo-imprimir .respuesta h2 {
+    color: #ff4713 !important;
+  }
+
+  /* Cada apartado numerado, en su propia tarjeta con fondo claro — le da
+     peso visual y, de paso, evita que un apartado se corte a mitad entre
+     dos páginas (break-inside: avoid solo funciona sobre un bloque entero,
+     por eso Markdown.tsx agrupa cada apartado en su <section>). */
+  .solo-imprimir .seccion-punto {
+    break-inside: avoid;
+    margin-bottom: 1.25rem;
+    padding: 1rem 1.25rem;
+    border-radius: 14px;
+    background: #fff0eb;
+  }
+  .solo-imprimir .seccion-punto h2:first-child {
+    margin-top: 0;
+  }
+  .solo-imprimir .seccion-punto > *:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Cabecera y pie en flujo normal: una vez arriba, una vez abajo. Nada de
+     position:fixed — esa técnica para repetirlos en cada página física es
+     frágil entre navegadores y aquí desordenaba el documento. */
+  .cabecera-impresion,
+  .pie-impresion {
     break-inside: avoid;
   }
 }

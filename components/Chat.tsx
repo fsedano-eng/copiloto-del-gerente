@@ -4,10 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { CONFIG } from "@/lib/config";
-import { Marca } from "./Logo";
+import { Logo, Marca } from "./Logo";
 import { Markdown } from "./Markdown";
 
 type Mensaje = { rol: "user" | "assistant"; contenido: string };
+
+// Mismo marcador que `yaTieneAnalisis` en lib/llm.ts (servidor): el apartado
+// "Nivel de riesgo" solo aparece en un análisis completo, nunca en las
+// preguntas de la Fase 1. No se importa esa función aquí porque lib/llm.ts
+// instancia el cliente de Anthropic y no debe entrar en el bundle del cliente.
+function esAnalisisCompleto(texto: string): boolean {
+  return /nivel de riesgo/i.test(texto);
+}
 type Conversacion = { id: string; titulo: string; updated_at: string };
 
 export function Chat({
@@ -28,14 +36,24 @@ export function Chat({
   const [error, setError] = useState<string | null>(null);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const idActual = useRef<string | null>(conversacionActiva);
+  const conversacionPrevia = useRef<string | null>(conversacionActiva);
   const finRef = useRef<HTMLDivElement>(null);
   const areaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Al cambiar de conversación desde la lista, recargamos el estado local.
+  // Al cambiar de conversación DESDE LA LISTA, recargamos el estado local.
+  // OJO: `mensajesIniciales` es una referencia nueva en cada `router.refresh()`
+  // (incluido el que hacemos al terminar de recibir una respuesta), así que si
+  // reseteáramos también por su cambio, un refresh a mitad de streaming podía
+  // pisar el texto que se estaba pintando en directo con la foto (más vieja)
+  // que el servidor tenía en ese instante. Solo importa si de verdad hemos
+  // navegado a OTRA conversación.
   useEffect(() => {
-    setMensajes(mensajesIniciales);
-    idActual.current = conversacionActiva;
-    setError(null);
+    if (conversacionActiva !== conversacionPrevia.current) {
+      setMensajes(mensajesIniciales);
+      idActual.current = conversacionActiva;
+      conversacionPrevia.current = conversacionActiva;
+      setError(null);
+    }
   }, [conversacionActiva, mensajesIniciales]);
 
   useEffect(() => {
@@ -78,10 +96,18 @@ export function Chat({
       const decodificador = new TextDecoder();
 
       if (lector) {
-        while (true) {
-          const { done, value } = await lector.read();
-          if (done) break;
-          const trozo = decodificador.decode(value, { stream: true });
+        // El modelo no manda el texto a ritmo constante: a veces llegan
+        // frases enteras de golpe y luego un silencio. Para que en pantalla
+        // siempre se vea "escribiendo" en vez de aparecer a trompicones,
+        // el texto que llega se guarda en un búfer y se va soltando a ritmo
+        // fijo, no tal cual llega.
+        let pendiente = "";
+        let leyendoTerminado = false;
+
+        const soltarUnPoco = () => {
+          if (pendiente.length === 0) return;
+          const trozo = pendiente.slice(0, 3);
+          pendiente = pendiente.slice(3);
           setMensajes((m) => {
             const copia = [...m];
             copia[copia.length - 1] = {
@@ -90,6 +116,27 @@ export function Chat({
             };
             return copia;
           });
+        };
+
+        const temporizador = setInterval(soltarUnPoco, 15);
+
+        try {
+          while (true) {
+            const { done, value } = await lector.read();
+            if (done) {
+              leyendoTerminado = true;
+              break;
+            }
+            pendiente += decodificador.decode(value, { stream: true });
+          }
+          // Ya no llega nada más: soltamos el resto del búfer al mismo ritmo
+          // para no dejar el final colgado.
+          while (leyendoTerminado && pendiente.length > 0) {
+            soltarUnPoco();
+            await new Promise((r) => setTimeout(r, 15));
+          }
+        } finally {
+          clearInterval(temporizador);
         }
       }
 
@@ -117,9 +164,14 @@ export function Chat({
   }
 
   const hayConversacion = mensajes.length > 0;
+  // Solo esto va al PDF: ni las preguntas de la Fase 1 ni los mensajes del
+  // gerente, para que sea un documento limpio con el resultado, no el hilo.
+  const mensajesAnalisis = mensajes.filter(
+    (m) => m.rol === "assistant" && esAnalisisCompleto(m.contenido),
+  );
 
   return (
-    <div className="flex h-dvh overflow-hidden">
+    <div className="raiz-app flex h-dvh overflow-hidden">
       {/* ── Lista de conversaciones ─────────────────────────────────── */}
       <aside
         className={`no-imprimir fixed inset-y-0 left-0 z-30 flex w-72 flex-col border-r border-gray-line bg-white transition-transform md:static md:translate-x-0 ${
@@ -191,7 +243,7 @@ export function Chat({
       )}
 
       {/* ── Conversación ────────────────────────────────────────────── */}
-      <main className="flex flex-1 flex-col overflow-hidden">
+      <main className="main-chat flex flex-1 flex-col overflow-hidden">
         <header className="no-imprimir flex items-center justify-between border-b border-gray-line bg-cream px-4 py-3 md:px-8">
           <button
             onClick={() => setMenuAbierto(true)}
@@ -213,7 +265,7 @@ export function Chat({
           )}
         </header>
 
-        <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8">
+        <div className="contenedor-scroll flex-1 overflow-y-auto px-4 py-6 md:px-8">
           <div className="hoja-impresion mx-auto max-w-lectura">
             {!hayConversacion ? (
               <div className="pt-8">
@@ -239,26 +291,61 @@ export function Chat({
                 </ul>
               </div>
             ) : (
-              <div className="space-y-6">
-                {mensajes.map((m, i) => (
-                  <div key={i} className="bloque-mensaje">
-                    {m.rol === "user" ? (
-                      <div className="burbuja-gerente ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-dark px-4 py-3 text-[15px] leading-relaxed text-white">
-                        {m.contenido}
+              <>
+                {/* Pantalla: el hilo completo, preguntas incluidas. */}
+                <div className="no-imprimir space-y-6">
+                  {mensajes.map((m, i) => (
+                    <div key={i} className="bloque-mensaje">
+                      {m.rol === "user" ? (
+                        <div className="burbuja-gerente ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-dark px-4 py-3 text-[15px] leading-relaxed text-white">
+                          {m.contenido}
+                        </div>
+                      ) : (
+                        <div className="text-[15px] text-ink">
+                          {m.contenido ? (
+                            <Markdown texto={m.contenido} />
+                          ) : (
+                            <Pensando />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  <div ref={finRef} />
+                </div>
+
+                {/* PDF: con membrete de marca, solo el análisis, sin
+                    preguntas de la Fase 1 ni el hilo de ida y vuelta. */}
+                <div className="solo-imprimir">
+                  <div className="cabecera-impresion">
+                    <Logo className="h-9 w-auto shrink-0" />
+                    <div>
+                      <div className="cabecera-impresion-marca">Loke</div>
+                      <div className="cabecera-impresion-producto">
+                        {CONFIG.marca.producto}
                       </div>
-                    ) : (
-                      <div className="text-[15px] text-ink">
-                        {m.contenido ? (
-                          <Markdown texto={m.contenido} />
-                        ) : (
-                          <Pensando />
-                        )}
-                      </div>
-                    )}
+                    </div>
                   </div>
-                ))}
-                <div ref={finRef} />
-              </div>
+                  {mensajesAnalisis.length > 0 ? (
+                    mensajesAnalisis.map((m, i) => (
+                      <Markdown key={i} texto={m.contenido} />
+                    ))
+                  ) : (
+                    <p className="text-[14px] text-gray">
+                      Todavía no hay un análisis completo en esta conversación
+                      — el PDF se rellena en cuanto el Copiloto lo entregue.
+                    </p>
+                  )}
+                </div>
+
+                {/* Pie repetido en cada página del PDF (ver truco CSS en
+                    globals.css: position:fixed + margen de @page). */}
+                <div className="pie-impresion solo-imprimir">
+                  ¿Dudas sobre este análisis? Escribe a {CONFIG.marca.contacto.email}
+                  {" · "}
+                  {CONFIG.marca.contacto.telefono} — {CONFIG.marca.contacto.web}
+                </div>
+              </>
             )}
 
             {error && (

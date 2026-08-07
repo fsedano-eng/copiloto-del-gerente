@@ -22,13 +22,17 @@ export const CONFIG = {
       subtitulo:
         "Tu apoyo entre sesiones para las decisiones sobre tu equipo. Acceso solo para gerentes dados de alta por Loke.",
       etiquetaEmail: "Tu email",
-      boton: "Enviar enlace de acceso",
+      boton: "Enviar código de acceso",
       enviado:
-        "Si ese email está dado de alta, te acaba de llegar un enlace de acceso. Revisa tu bandeja (y el spam).",
+        "Si ese email está dado de alta, te acaba de llegar un código de 6 cifras. Revisa tu bandeja (y el spam).",
       // Deliberadamente igual que el mensaje de éxito: no revelamos qué emails
       // existen. Ver nota en app/entrar/page.tsx.
       noAutorizado:
-        "Si ese email está dado de alta, te acaba de llegar un enlace de acceso. Revisa tu bandeja (y el spam).",
+        "Si ese email está dado de alta, te acaba de llegar un código de 6 cifras. Revisa tu bandeja (y el spam).",
+      etiquetaCodigo: "Código de 6 cifras",
+      botonVerificar: "Entrar",
+      codigoInvalido: "Ese código no es correcto o ha caducado. Pide uno nuevo.",
+      reenviar: "Pedir otro código",
     },
     sinAlta: {
       titulo: "Tu cuenta todavía no está configurada",

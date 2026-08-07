@@ -117,6 +117,10 @@ export async function POST(request: Request) {
         const flujo = anthropic.messages.stream({
           model: CONFIG.ia.modelo,
           max_tokens: CONFIG.ia.maxTokens,
+          // Sin esto, el modelo piensa en un bloque invisible antes de
+          // responder: se come parte de max_tokens (respuestas más cortas
+          // de lo pedido) y el usuario no ve nada en pantalla mientras dura.
+          thinking: { type: "disabled" },
           system: [
             {
               type: "text",
