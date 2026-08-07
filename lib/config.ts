@@ -65,7 +65,12 @@ export const CONFIG = {
 
   ia: {
     modelo: process.env.CHAT_MODEL ?? "claude-sonnet-5",
-    maxTokens: 2000,
+    /**
+     * Los 10 apartados completos no caben en 2000: la respuesta se cortaba a
+     * mitad del apartado 8. Con 8000 hay margen de sobra para el caso largo.
+     * El coste de salida sube solo cuando la respuesta de verdad es larga.
+     */
+    maxTokens: 8000,
     /** Timeout de la llamada. Por encima de esto, error controlado. */
     timeoutMs: 60_000,
   },
