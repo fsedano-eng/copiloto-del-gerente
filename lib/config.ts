@@ -74,6 +74,24 @@ export const CONFIG = {
     /** Timeout de la llamada. Por encima de esto, error controlado. */
     timeoutMs: 60_000,
   },
+
+  sitio: {
+    /** Base para los enlaces de los correos. En local, ponlo en .env.local. */
+    url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://copiloto-del-gerente.vercel.app",
+  },
+
+  /**
+   * Aviso por email a Loke cuando un gerente abre una consulta nueva.
+   * Solo en conversación nueva, no en cada mensaje: si no, un gerente activo
+   * llena la bandeja. Si falta RESEND_API_KEY, simplemente no se avisa.
+   */
+  notificaciones: {
+    activo: true,
+    // Mientras loke.es no esté verificado en Resend, este es el único
+    // remitente válido y solo entrega a la propia cuenta de Fran.
+    remitente: "Copiloto del Gerente <onboarding@resend.dev>",
+    destinatario: "fsedano@loke.es",
+  },
 } as const;
 
 export type Config = typeof CONFIG;

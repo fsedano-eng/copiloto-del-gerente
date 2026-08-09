@@ -24,7 +24,12 @@ export function Chat({
   conversacionActiva,
   mensajesIniciales,
 }: {
-  gerente: { nombre: string | null; email: string; empresa: string | null };
+  gerente: {
+    nombre: string | null;
+    email: string;
+    empresa: string | null;
+    esAdmin?: boolean;
+  };
   conversaciones: Conversacion[];
   conversacionActiva: string | null;
   mensajesIniciales: Mensaje[];
@@ -225,6 +230,14 @@ export function Chat({
           </p>
           {gerente.empresa && (
             <p className="truncate text-[12px] text-gray">{gerente.empresa}</p>
+          )}
+          {gerente.esAdmin && (
+            <a
+              href="/admin"
+              className="mt-2 block text-[13px] font-medium text-orange hover:underline"
+            >
+              Consultas de los gerentes
+            </a>
           )}
           <button
             onClick={salir}

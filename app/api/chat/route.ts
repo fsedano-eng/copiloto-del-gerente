@@ -10,6 +10,7 @@ import {
 import { INSTRUCCION_SEGUIMIENTO } from "@/lib/llm";
 import { esquemaMensaje } from "@/lib/validation";
 import { superaLimite } from "@/lib/rateLimit";
+import { avisarConsultaNueva } from "@/lib/notificaciones";
 import { CONFIG } from "@/lib/config";
 
 export const runtime = "nodejs";
@@ -153,6 +154,16 @@ export async function POST(request: Request) {
             conversacion_id: conversacionId,
             rol: "assistant",
             contenido: respuestaCompleta,
+          });
+        }
+
+        // Aviso a Loke, solo al abrir consulta. Va aquí, con la respuesta ya
+        // entregada, para no añadir espera al gerente; nunca lanza.
+        if (esNueva) {
+          await avisarConsultaNueva({
+            gerente: gerente.nombre ?? gerente.email,
+            empresa: gerente.cliente?.nombre ?? null,
+            conversacionId: conversacionId!,
           });
         }
       } catch (error) {

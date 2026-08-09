@@ -36,7 +36,10 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const ruta = request.nextUrl.pathname;
-  const esRutaPrivada = ruta.startsWith("/chat") || ruta.startsWith("/api/");
+  const esRutaPrivada =
+    ruta.startsWith("/chat") ||
+    ruta.startsWith("/admin") ||
+    ruta.startsWith("/api/");
   const esRutaDeAuth = ruta.startsWith("/entrar") || ruta.startsWith("/auth");
 
   if (!user && esRutaPrivada) {

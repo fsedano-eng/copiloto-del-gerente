@@ -45,10 +45,14 @@ export default async function ChatPage({
   const supabase = await createClient();
   const { c: conversacionActiva } = await searchParams;
 
-  // Lista de conversaciones del gerente (RLS: solo las suyas).
+  // Lista de conversaciones del gerente. El filtro por gerente_id es
+  // explícito a propósito: para un admin el RLS deja ver las de todos, y sin
+  // esto se le mezclarían aquí las conversaciones de sus gerentes. Las ajenas
+  // se leen en /admin, que es donde tiene sentido verlas.
   const { data: conversaciones } = await supabase
     .from("conversaciones")
     .select("id, titulo, updated_at")
+    .eq("gerente_id", gerente.id)
     .eq("archivada", false)
     .order("updated_at", { ascending: false })
     .limit(100);
@@ -70,6 +74,7 @@ export default async function ChatPage({
         nombre: gerente.nombre,
         email: gerente.email,
         empresa: gerente.cliente?.nombre ?? null,
+        esAdmin: gerente.rol === "admin",
       }}
       conversaciones={conversaciones ?? []}
       conversacionActiva={conversacionActiva ?? null}
