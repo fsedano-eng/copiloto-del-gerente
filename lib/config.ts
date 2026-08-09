@@ -87,9 +87,10 @@ export const CONFIG = {
    */
   notificaciones: {
     activo: true,
-    // Mientras loke.es no esté verificado en Resend, este es el único
-    // remitente válido y solo entrega a la propia cuenta de Fran.
-    remitente: "Copiloto del Gerente <onboarding@resend.dev>",
+    // Subdominio propio verificado en Resend. Va aparte de loke.es a
+    // propósito: el correo de la casa va por Google y no queremos que los
+    // envíos de la app toquen esos registros.
+    remitente: "Copiloto del Gerente <copiloto@avisos.loke.es>",
     destinatario: "fsedano@loke.es",
   },
 } as const;
