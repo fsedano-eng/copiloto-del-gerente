@@ -22,7 +22,10 @@ Guía para dejarlo funcionando. Los pasos marcados con 🔑 solo puedes hacerlos
 Debe decir "Success". Esto crea las tablas y, sobre todo, las reglas de seguridad
 (RLS) que hacen que cada gerente solo pueda ver sus propias conversaciones.
 
-## 3. Configurar el acceso por enlace mágico 🔑
+## 3. Configurar el acceso por código 🔑
+
+Se entra con un código de varias cifras que llega por correo. No hay contraseña
+ni enlace: da igual el navegador o el dispositivo donde se abra.
 
 En el panel de Supabase, **Authentication**:
 
@@ -30,9 +33,9 @@ En el panel de Supabase, **Authentication**:
 2. En ese mismo apartado, **desactiva "Allow new users to sign up"**.
    Esto es lo que hace que solo entre quien tú das de alta. (El código ya lo
    impide por su lado; esto es el segundo cerrojo.)
-3. **URL Configuration** → en **Redirect URLs** añade:
-   - `http://localhost:3000/auth/callback` (para probar en tu ordenador)
-   - `https://TU-DOMINIO/auth/callback` (cuando lo despliegues, paso 7)
+3. **Emails** → plantilla **Magic Link** → sustituye el enlace por el código,
+   usando la variable `{{ .Token }}`. Si dejas la plantilla por defecto, al
+   gerente le llegará un enlace que la app ya no usa.
 
 ## 4. Conseguir las claves 🔑
 
@@ -60,32 +63,48 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 Este archivo **nunca se sube a git** (ya está excluido). Las claves no salen de tu
 ordenador hasta que las pongas también en Vercel (paso 7).
 
-## 6. Darte de alta a ti mismo para probar 🔑
+## 6. Dar de alta a alguien (a ti, o a un gerente) 🔑
 
-1. Supabase → **Authentication** → **Users** → **Add user** → **Send invitation**.
-   Pon tu email (`fsedano@loke.es`). Te llega un correo.
-2. Copia el **UUID** que aparece en la lista de usuarios.
-3. Vuelve a **SQL Editor** y ejecuta esto, cambiando los valores:
+Son siempre dos pasos: crear el usuario, y decirle a qué empresa pertenece.
+
+**Paso 1 — crear el usuario.**
+Supabase → **Authentication** → **Users** → **Add user** → **Create new user**:
+
+- Email de la persona
+- Contraseña: cualquier cosa aleatoria. No se usa nunca — aquí se entra con un
+  código que llega por correo, no con contraseña
+- Marca **Auto Confirm User**. Si te lo saltas, la cuenta queda sin confirmar y
+  el código de acceso puede fallar
+- Copia el **UID** que aparece en la lista
+
+**Paso 2 — asignarle empresa y rol.** En **SQL Editor**.
+
+Para una empresa nueva (crea la empresa y su primer gerente de una vez):
 
 ```sql
--- Primero la empresa (para probar, la tuya)
-insert into public.clientes (nombre, plan)
-values ('Loke — pruebas', 'liderazgo')
-returning id;
--- ↑ copia el id que devuelve
-
--- Ahora tú como gerente (rol admin: podrás ver todas las conversaciones)
+with empresa as (
+  insert into public.clientes (nombre, plan)
+  values ('Nombre de la empresa', 'liderazgo')
+  returning id
+)
 insert into public.gerentes (id, email, nombre, cliente_id, rol)
-values (
-  'PEGA-AQUI-TU-UUID-DE-AUTH',
-  'fsedano@loke.es',
-  'Fran Sedano',
-  'PEGA-AQUI-EL-ID-DE-CLIENTES',
-  'admin'
-);
+select 'PEGA-AQUI-EL-UID', 'gerente@empresa.com', 'Nombre Apellido', empresa.id, 'gerente'
+from empresa;
 ```
 
-**Sin este paso 3, el email entra pero la app le dice que su cuenta no está
+Para añadir otro gerente a una empresa que ya existe (no hace falta buscar ids):
+
+```sql
+insert into public.gerentes (id, email, nombre, cliente_id, rol)
+select 'PEGA-AQUI-EL-UID', 'gerente@empresa.com', 'Nombre Apellido', id, 'gerente'
+from public.clientes where nombre = 'Nombre exacto de la empresa';
+```
+
+`plan` acepta `liderazgo`, `360_estandar` o `360_premium`.
+`rol` va en `gerente`; `admin` es solo para ti (ve todas las conversaciones en
+`/admin`).
+
+**Sin el paso 2, la persona entra pero la app le dice que su cuenta no está
 configurada.** Es a propósito: el alta la controlas tú.
 
 ## 7. Probarlo en tu ordenador
@@ -96,10 +115,10 @@ Desde una terminal, dentro de la carpeta del proyecto:
 npm run dev
 ```
 
-Abre `http://localhost:3000`, pon tu email, y te llega el enlace de acceso.
+Abre `http://localhost:3000`, pon tu email, y te llega el código de acceso.
 
 Qué comprobar:
-- [ ] Llega el email y el enlace te mete en el chat
+- [ ] Llega el email con el código y con él entras en el chat
 - [ ] Escribes una situación real y responde con el Método Loke
 - [ ] Te hace preguntas antes de dar el análisis (Fase 1)
 - [ ] Al terminar, la conversación aparece en la lista de la izquierda con título propio
@@ -113,14 +132,19 @@ Qué comprobar:
 2. [vercel.com](https://vercel.com) → **Add New** → **Project** → importa ese repo.
 3. **Importante**: si el proyecto está dentro de otra carpeta, configura
    **Root Directory** apuntando a la carpeta del Copiloto.
-4. En **Environment Variables**, añade las mismas cuatro de tu `.env.local`,
-   pero con `NEXT_PUBLIC_SITE_URL` = la URL real de Vercel.
+4. En **Environment Variables**, añade las mismas de tu `.env.local`:
+   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+   `ANTHROPIC_API_KEY`, `CHAT_MODEL` y `RESEND_API_KEY` (esta última es para
+   los avisos de uso; sin ella no falla nada, simplemente no llegan).
+   Ojo al pegar las claves: cópialas de donde las tengas en claro, **nunca del
+   panel del proveedor**, que las muestra enmascaradas con puntitos. Una clave
+   enmascarada rompe la app con un error de lo más críptico.
 5. **Deploy**.
-6. Vuelve a Supabase → **Authentication** → **URL Configuration** y añade la URL
-   real de Vercel a **Redirect URLs** (si no, los enlaces mágicos te devolverán
-   a localhost).
-7. **Repite las comprobaciones del paso 7 en producción.** El entorno local
+6. **Repite las comprobaciones del paso 7 en producción.** El entorno local
    miente a veces.
+
+Cambiar una variable de entorno **no vuelve a desplegar solo**: después de
+tocarlas hay que ir a **Deployments** → **Redeploy**.
 
 ---
 
@@ -141,9 +165,16 @@ Mientras resuelves esto, puedes probarlo tú y con quien tenga confianza.
 
 ## Añadir un cliente nuevo (cuando ya esté en marcha)
 
-Mismo procedimiento del paso 6, pero con `rol` = `'gerente'` en vez de `'admin'`.
-Un cliente puede tener varios gerentes: se insertan varias filas con el mismo
-`cliente_id`.
+Mismo procedimiento del **paso 6**. Una empresa puede tener varios gerentes: se
+insertan varias filas con el mismo `cliente_id` (la segunda consulta del paso 6
+lo resuelve buscando la empresa por su nombre).
+
+## Ver lo que consultan los gerentes
+
+En `/admin` (solo con `rol = 'admin'`): todas las consultas agrupadas por
+empresa, y cada una se abre entera en solo lectura. También llega un aviso por
+correo cada vez que alguien abre una consulta nueva — lleva quién, de qué
+empresa y cuándo, nunca el contenido.
 
 ## Dar de baja a un cliente (derecho de supresión)
 
