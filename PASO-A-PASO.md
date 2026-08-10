@@ -153,13 +153,18 @@ tocarlas hay que ir a **Deployments** → **Redeploy**.
 Esto no es opcional. Las conversaciones guardan datos de empleados concretos, así
 que Loke actúa como **encargado del tratamiento**:
 
-- [ ] Política de privacidad que cubra explícitamente esta herramienta
 - [ ] **Contrato de encargado del tratamiento** firmado con cada empresa cliente
-      (documento estándar, tu gestoría lo tiene)
-- [ ] Política de borrado definida: cuánto tiempo se guardan las conversaciones y
-      qué pasa cuando un cliente se va (ver el final de `schema.sql`)
-- [ ] Decírselo al gerente dentro de la propia herramienta, sin letra pequeña
-      (ahora mismo hay un aviso bajo el cuadro de escritura — revisa que te vale)
+- [ ] DPA y transferencias internacionales de los proveedores (Anthropic está
+      en EE. UU. — hace falta comprobar el mecanismo y guardarlo)
+- [ ] Valorar si procede una Evaluación de Impacto (EIPD)
+- [ ] Texto informativo para los empleados, que se lo das al cliente hecho
+- [ ] Política de conservación y borrado
+- [ ] Política de privacidad que cubra explícitamente esta herramienta
+- [ ] Registro de actividades de tratamiento
+
+**Todo esto está desarrollado, con el porqué de cada punto, en
+[`LEGAL-RGPD.md`](./LEGAL-RGPD.md)** — ese es el documento para llevar a la
+gestoría.
 
 Mientras resuelves esto, puedes probarlo tú y con quien tenga confianza.
 
