@@ -47,7 +47,10 @@ export const CONFIG = {
         "Un empleado lleva un mes raro y no sé si preguntar",
         "Mi encargado organiza bien el trabajo pero no sabe dirigir gente",
       ],
-      placeholder: "Cuéntame qué pasa, con el detalle que puedas...",
+      // Corto a propósito: en móvil el cuadro es de una línea, y un texto
+      // más largo se parte en dos y queda cortado por abajo. Lo de "con el
+      // detalle que puedas" ya se dice en la pantalla de bienvenida.
+      placeholder: "Cuéntame qué pasa...",
       nuevaConversacion: "Nueva conversación",
       descargarPdf: "Descargar en PDF",
     },
