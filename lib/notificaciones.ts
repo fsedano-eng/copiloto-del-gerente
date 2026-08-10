@@ -38,6 +38,7 @@ export async function avisarConsultaNueva(datos: {
         html: `
 <div style="max-width:480px;margin:0 auto;padding:32px 24px;font-family:Arial,Helvetica,sans-serif;color:#2d2a26;">
   <div style="border-bottom:3px solid #ff4713;padding-bottom:16px;margin-bottom:24px;">
+    <img src="${CONFIG.sitio.url}/logo-loke.png" width="40" height="40" alt="Loke" style="display:block;border:0;margin-bottom:8px;">
     <div style="font-size:18px;font-weight:700;">Loke</div>
     <div style="font-size:13px;color:#6b6560;">Copiloto del Gerente</div>
   </div>
