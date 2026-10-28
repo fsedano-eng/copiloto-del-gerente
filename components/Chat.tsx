@@ -180,9 +180,19 @@ export function Chat({
     let micro: MediaStream;
     try {
       micro = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
+    } catch (e) {
+      // El navegador dice en el nombre del error qué ha pasado exactamente.
+      // Aprovecharlo ahorra media hora de "revisa los permisos" a ciegas:
+      // el permiso del sistema y el de la página son cosas distintas.
+      const motivo = (e as DOMException)?.name;
       setError(
-        "No he podido acceder al micrófono. Revisa que el navegador tenga permiso.",
+        motivo === "NotAllowedError"
+          ? "El navegador tiene bloqueado el micrófono para esta página. Haz clic en el icono que hay a la izquierda de la dirección web, pon Micrófono en Permitir y recarga."
+          : motivo === "NotFoundError"
+            ? "No encuentro ningún micrófono. Comprueba que esté conectado y seleccionado en los ajustes de sonido del sistema."
+            : motivo === "NotReadableError"
+              ? "Hay otra aplicación usando el micrófono. Ciérrala (Zoom, Teams, Meet...) y vuelve a intentarlo."
+              : "No he podido acceder al micrófono.",
       );
       return;
     }
