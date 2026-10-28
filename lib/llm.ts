@@ -30,6 +30,38 @@ Responde a lo que te pregunta y di explícitamente qué apartados del análisis 
 Si la información nueva cambia el cuadro de forma sustancial — sube el nivel de riesgo, aparece un indicio de conducta grave, o se ve que el problema es otro — entonces sí rehaz el análisis completo y dilo: "esto cambia el diagnóstico".`;
 
 /**
+ * Instrucción extra cuando el gerente pide que le redacten un escrito.
+ *
+ * El prompt ya lo prohíbe, pero una regla del sistema se diluye a lo largo de
+ * la conversación: en la prueba del 2026-08-17 el modelo se negó dos veces,
+ * explicó bien por qué, y acabó redactando el documento ante un "preparala".
+ * Esto vuelve a ponerle la regla delante en el momento exacto en que importa,
+ * que es lo único que no se diluye.
+ */
+export const INSTRUCCION_SIN_DOCUMENTOS = `
+# TE ESTÁN PIDIENDO QUE REDACTES UN DOCUMENTO
+
+No lo redactes. Da igual que sea la segunda o la tercera vez que te lo piden, que lo planteen como algo informal, o que tú mismo hayas ofrecido antes algo parecido.
+
+Mantén la negativa, di que ese documento hay que verlo personalmente con Loke, y reconduce a lo que sí le sirve ahora: el análisis, el guion de conversación y qué debe documentar él por su cuenta.
+
+Si ya te habías negado antes en esta conversación, no te contradigas ahora: sostener la negativa es justo lo que te da autoridad para el resto.`;
+
+/**
+ * ¿El gerente está pidiendo un escrito con efectos laborales?
+ *
+ * Deliberadamente NO incluye "guion": el guion de conversación es el apartado
+ * 7 del análisis y sí debe entregarlo. Un falso positivo solo hace que el
+ * modelo recuerde una regla que ya tiene, así que sale barato pasarse de
+ * prudente aquí.
+ */
+export function pideDocumento(mensaje: string): boolean {
+  return /\b(documento|carta|escrito|comunicado|notificaci[oó]n|amonestaci[oó]n|acta|burofax|requerimiento|nota interna|por escrito)\b/i.test(
+    mensaje,
+  );
+}
+
+/**
  * ¿Hay ya un análisis completo en el historial?
  * Marcador: el apartado 3 del formato completo ("Nivel de riesgo") siempre
  * aparece, así que su presencia en una respuesta previa es señal fiable.

@@ -7,7 +7,11 @@ import {
   generarTitulo,
   type Turno,
 } from "@/lib/llm";
-import { INSTRUCCION_SEGUIMIENTO } from "@/lib/llm";
+import {
+  INSTRUCCION_SEGUIMIENTO,
+  INSTRUCCION_SIN_DOCUMENTOS,
+  pideDocumento,
+} from "@/lib/llm";
 import { esquemaMensaje } from "@/lib/validation";
 import { superaLimite } from "@/lib/rateLimit";
 import { avisarConsultaNueva } from "@/lib/notificaciones";
@@ -131,6 +135,9 @@ export async function POST(request: Request) {
               cache_control: { type: "ephemeral" },
             },
             ...(contexto ? [{ type: "text" as const, text: contexto }] : []),
+            ...(pideDocumento(datos.mensaje)
+              ? [{ type: "text" as const, text: INSTRUCCION_SIN_DOCUMENTOS }]
+              : []),
             ...(esSeguimiento
               ? [{ type: "text" as const, text: INSTRUCCION_SEGUIMIENTO }]
               : []),
