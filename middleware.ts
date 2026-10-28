@@ -36,10 +36,15 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const ruta = request.nextUrl.pathname;
+  // El cron que mantiene despierta la base de datos no tiene sesión de
+  // nadie: se identifica con su propio secreto dentro de la ruta.
+  const esTareaProgramada = ruta.startsWith("/api/mantener-viva");
+
   const esRutaPrivada =
-    ruta.startsWith("/chat") ||
-    ruta.startsWith("/admin") ||
-    ruta.startsWith("/api/");
+    !esTareaProgramada &&
+    (ruta.startsWith("/chat") ||
+      ruta.startsWith("/admin") ||
+      ruta.startsWith("/api/"));
   const esRutaDeAuth = ruta.startsWith("/entrar") || ruta.startsWith("/auth");
 
   if (!user && esRutaPrivada) {
