@@ -40,6 +40,9 @@ export function Chat({
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [grabando, setGrabando] = useState(false);
+  const [transcribiendo, setTranscribiendo] = useState(false);
+  const grabadoraRef = useRef<MediaRecorder | null>(null);
   const idActual = useRef<string | null>(conversacionActiva);
   const conversacionPrevia = useRef<string | null>(conversacionActiva);
   const finRef = useRef<HTMLDivElement>(null);
@@ -160,6 +163,73 @@ export function Chat({
       setEnviando(false);
       areaRef.current?.focus();
     }
+  }
+
+  /**
+   * Dictado por voz. Graba, manda el audio a nuestra ruta de transcripción y
+   * añade el texto a lo que ya hubiera escrito, sin enviarlo: el gerente
+   * revisa antes de mandar, que para eso está hablando de personas.
+   */
+  async function dictar() {
+    if (grabando) {
+      grabadoraRef.current?.stop();
+      return;
+    }
+
+    setError(null);
+    let micro: MediaStream;
+    try {
+      micro = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setError(
+        "No he podido acceder al micrófono. Revisa que el navegador tenga permiso.",
+      );
+      return;
+    }
+
+    const trozos: Blob[] = [];
+    const grabadora = new MediaRecorder(micro);
+    grabadoraRef.current = grabadora;
+
+    grabadora.ondataavailable = (e) => {
+      if (e.data.size > 0) trozos.push(e.data);
+    };
+
+    grabadora.onstop = async () => {
+      // Soltamos el micro en cuanto deja de hacer falta: si no, el navegador
+      // deja el indicador de grabación encendido y acojona.
+      micro.getTracks().forEach((t) => t.stop());
+      setGrabando(false);
+      grabadoraRef.current = null;
+
+      const audio = new Blob(trozos, { type: grabadora.mimeType });
+      if (audio.size === 0) return;
+
+      setTranscribiendo(true);
+      try {
+        const cuerpo = new FormData();
+        cuerpo.append("audio", audio, "dictado.webm");
+        const respuesta = await fetch("/api/transcribir", {
+          method: "POST",
+          body: cuerpo,
+        });
+        const datos = await respuesta.json();
+        if (!respuesta.ok) throw new Error(datos.error ?? "No se ha podido transcribir");
+
+        const texto = (datos.texto ?? "").trim();
+        if (texto) {
+          setEntrada((actual) => (actual ? `${actual} ${texto}` : texto));
+          areaRef.current?.focus();
+        }
+      } catch (e) {
+        setError((e as Error).message);
+      } finally {
+        setTranscribiendo(false);
+      }
+    };
+
+    grabadora.start();
+    setGrabando(true);
   }
 
   async function salir() {
@@ -391,10 +461,30 @@ export function Chat({
                 }}
                 rows={1}
                 maxLength={CONFIG.limites.caracteresPorMensaje}
-                placeholder={CONFIG.textos.chat.placeholder}
+                placeholder={
+                  grabando
+                    ? "Te escucho..."
+                    : transcribiendo
+                      ? "Transcribiendo..."
+                      : CONFIG.textos.chat.placeholder
+                }
                 disabled={enviando}
                 className="max-h-40 min-h-[44px] flex-1 resize-none bg-transparent px-2 py-2.5 text-[15px] leading-relaxed outline-none disabled:opacity-50"
               />
+              <button
+                type="button"
+                onClick={dictar}
+                disabled={enviando || transcribiendo}
+                aria-label={grabando ? "Parar de dictar" : "Dictar"}
+                title={grabando ? "Parar de dictar" : "Dictar"}
+                className={`shrink-0 rounded-xl border px-3 py-2.5 text-[14px] transition disabled:cursor-not-allowed disabled:opacity-30 ${
+                  grabando
+                    ? "animate-pulse border-orange bg-orange text-white"
+                    : "border-gray-line text-dark hover:border-orange hover:bg-orange-soft"
+                }`}
+              >
+                {transcribiendo ? "..." : grabando ? "■" : "🎤"}
+              </button>
               <button
                 type="submit"
                 disabled={enviando || !entrada.trim()}

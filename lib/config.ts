@@ -78,6 +78,16 @@ export const CONFIG = {
     timeoutMs: 60_000,
   },
 
+  /**
+   * Dictado por voz. La transcripción pasa por nuestro servidor (ver
+   * app/api/transcribir/route.ts) y el audio no se guarda en ninguna parte.
+   */
+  voz: {
+    modelo: "whisper-large-v3-turbo",
+    /** ~25 MB, el tope de Groq. Son muchos minutos de voz. */
+    maxBytes: 25 * 1024 * 1024,
+  },
+
   sitio: {
     /** Base para los enlaces de los correos. En local, ponlo en .env.local. */
     url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://copiloto-del-gerente.vercel.app",
