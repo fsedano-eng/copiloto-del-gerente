@@ -220,8 +220,15 @@ export function Chat({
       // diminuta y Whisper devuelve muletillas inventadas tipo "Gracias.".
       // Mejor avisar que mandar silencio y pegar una frase que nadie dijo.
       if (audio.size < 2000) {
+        // Decir QUÉ micrófono se ha usado ahorra el 90% del diagnóstico:
+        // lo habitual no es que falte permiso, es que el navegador haya
+        // cogido un dispositivo virtual (OBS, Teams, ApowerMirror...) que
+        // no tiene señal y graba un silencio perfecto.
+        const dispositivo = micro.getAudioTracks()[0]?.label;
         setError(
-          "No he captado nada. Si estás en Mac, revisa Ajustes del Sistema → Privacidad y seguridad → Micrófono y comprueba que tu navegador esté activado.",
+          dispositivo
+            ? `No he captado nada. Está grabando con "${dispositivo}": si ese no es tu micrófono, cámbialo en los ajustes de sonido del sistema y en los del navegador.`
+            : "No he captado nada. Revisa qué micrófono tienes seleccionado en los ajustes de sonido.",
         );
         return;
       }
