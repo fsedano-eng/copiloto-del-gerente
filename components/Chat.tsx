@@ -202,13 +202,29 @@ export function Chat({
       setGrabando(false);
       grabadoraRef.current = null;
 
-      const audio = new Blob(trozos, { type: grabadora.mimeType });
-      if (audio.size === 0) return;
+      const tipo = grabadora.mimeType || "audio/webm";
+      const audio = new Blob(trozos, { type: tipo });
+
+      // Con la pista en silencio (típico si macOS no le da permiso al
+      // navegador, aunque el navegador sí lo tenga) la grabación sale
+      // diminuta y Whisper devuelve muletillas inventadas tipo "Gracias.".
+      // Mejor avisar que mandar silencio y pegar una frase que nadie dijo.
+      if (audio.size < 2000) {
+        setError(
+          "No he captado nada. Si estás en Mac, revisa Ajustes del Sistema → Privacidad y seguridad → Micrófono y comprueba que tu navegador esté activado.",
+        );
+        return;
+      }
 
       setTranscribiendo(true);
       try {
+        const extension = tipo.includes("mp4")
+          ? "mp4"
+          : tipo.includes("ogg")
+            ? "ogg"
+            : "webm";
         const cuerpo = new FormData();
-        cuerpo.append("audio", audio, "dictado.webm");
+        cuerpo.append("audio", audio, `dictado.${extension}`);
         const respuesta = await fetch("/api/transcribir", {
           method: "POST",
           body: cuerpo,

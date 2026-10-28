@@ -51,7 +51,10 @@ export async function POST(request: Request) {
 
   try {
     const cuerpo = new FormData();
-    cuerpo.append("file", audio, "dictado.webm");
+    // El nombre importa: Groq deduce el formato por la extensión. Safari
+    // graba en mp4 y Chrome en webm, así que mandarlo siempre como .webm
+    // haría que el audio de Safari llegara mal etiquetado.
+    cuerpo.append("file", audio, audio.name || "dictado.webm");
     cuerpo.append("model", CONFIG.voz.modelo);
     // Decirle el idioma mejora bastante la transcripción y evita que se vaya
     // al inglés con nombres propios o frases cortas.
